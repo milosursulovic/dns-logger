@@ -9,7 +9,6 @@ namespace DnsLoggingService
     {
         private readonly ILogger<DnsLoggerWorker> _logger;
         private HashSet<string> _dnsLog = new();
-        private DateTime _lastUpload = DateTime.Now;
         private string basePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "DnsLogger"
@@ -42,7 +41,6 @@ namespace DnsLoggingService
                 return Task.CompletedTask;
             }
         }
-
 
 
         private void StartCapture(CancellationToken token)
