@@ -45,6 +45,7 @@ namespace DnsLoggingService
         {
             var devices = CaptureDeviceList.Instance;
             File.AppendAllText(logPath, $"Service started at {DateTime.Now}\n");
+
             if (devices.Count < 1)
             {
                 File.AppendAllText(logPath, $"No capture devices found at {DateTime.Now}\n");
@@ -82,7 +83,6 @@ namespace DnsLoggingService
                     }
                 }, token);
             }
-
         }
 
         private void OnPacketArrival(object sender, PacketCapture e)
@@ -103,6 +103,7 @@ namespace DnsLoggingService
                         }
 
                         SaveDomainToDatabase(domain);
+                        UploadLog(domain);
                     }
                 }
             }
@@ -176,31 +177,27 @@ namespace DnsLoggingService
         }
 
 
-        private void UploadLogs()
+        private void UploadLog(string domain)
         {
-            List<string> toUpload;
-            lock (_dnsLog)
-            {
-                toUpload = _dnsLog.Distinct().ToList();
-                _dnsLog.Clear();
-            }
-
-            if (toUpload.Count == 0) return;
-
-            var json = System.Text.Json.JsonSerializer.Serialize(toUpload);
-
-            using var client = new HttpClient();
+            var json = System.Text.Json.JsonSerializer.Serialize(new[] { domain });
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+
+            using var client = new HttpClient(handler);
             try
             {
-                var response = client.PostAsync("http://192.168.0.100:3000/api/domains", content).Result;
-                _logger.LogInformation($"Uploaded {toUpload.Count} domains: {response.StatusCode}");
+                var response = client.PostAsync("https://192.168.0.103:3000/api/domains", content).Result;
+                _logger.LogInformation($"Uploaded domain {domain}: {response.StatusCode}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to upload domains.");
+                _logger.LogError(ex, $"Failed to upload domain: {domain}");
             }
         }
+
     }
 }

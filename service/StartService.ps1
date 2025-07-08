@@ -1,5 +1,5 @@
 # --- CONFIG ---
-$ProjectPath = "E:\Projects\dns-logger\service"
+$ProjectPath = "E:\Projects\dns-logger\service\DnsLoggingService"
 $ServiceName = "DnsLoggingService"
 $PublishFolder = "$ProjectPath\bin\Release\net8.0\win-x64\publish"
 $TargetPath = "C:\Program Files\DnsLogger\DnsLoggingService.exe"
@@ -53,7 +53,7 @@ Write-Host "Copying new executable to $TargetPath"
 Copy-Item -Path $NewExe -Destination $TargetPath -Force
 
 # --- STEP 4: Start or restart service ---
-Write-Host "▶Starting service: $ServiceName"
+Write-Host "Starting service: $ServiceName"
 Start-Service -Name $ServiceName
 
 Write-Host "Update complete."
