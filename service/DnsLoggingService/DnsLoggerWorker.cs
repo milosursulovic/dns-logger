@@ -23,6 +23,9 @@ namespace DnsLoggingService
             Directory.CreateDirectory(basePath);
             dbPath = Path.Combine(basePath, "domains.db");
             logPath = Path.Combine(basePath, "log.txt");
+
+            string envPath = Path.Combine(basePath, ".env");
+            LoadEnvFromFile(envPath);
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -190,12 +193,28 @@ namespace DnsLoggingService
             using var client = new HttpClient(handler);
             try
             {
-                var response = client.PostAsync("https://192.168.0.103:3000/api/domains", content).Result;
+                var uploadUrl = Environment.GetEnvironmentVariable("DNS_UPLOAD_URL");
+                var response = client.PostAsync(uploadUrl, content).Result;
                 _logger.LogInformation($"Uploaded domain {domain}: {response.StatusCode}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Failed to upload domain: {domain}");
+            }
+        }
+
+        private void LoadEnvFromFile(string path)
+        {
+            if (!File.Exists(path)) return;
+
+            foreach (var line in File.ReadAllLines(path))
+            {
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+                var parts = line.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+                }
             }
         }
 
