@@ -24,7 +24,8 @@ namespace DnsLoggingService
             dbPath = Path.Combine(basePath, "domains.db");
             logPath = Path.Combine(basePath, "log.txt");
 
-            string envPath = Path.Combine(basePath, ".env");
+            string exePath = AppContext.BaseDirectory;
+            string envPath = Path.Combine(exePath, ".env");
             LoadEnvFromFile(envPath);
         }
 
@@ -37,7 +38,7 @@ namespace DnsLoggingService
             }
             catch (Exception ex)
             {
-                File.AppendAllText("C:\\ProgramData\\DnsLogger\\fatal.txt", $"[{DateTime.Now}] CRASH in ExecuteAsync: {ex}\n");
+                File.AppendAllText(logPath, $"[{DateTime.Now}] CRASH in ExecuteAsync: {ex}\n");
                 return Task.CompletedTask;
             }
         }
