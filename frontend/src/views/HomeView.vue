@@ -1,5 +1,11 @@
 <template>
   <div class="p-6">
+    <button
+      @click="logout"
+      class="absolute top-4 right-4 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+    >
+      Odjava
+    </button>
     <h1 class="text-2xl font-semibold mb-4">DNS Logovi</h1>
 
     <div class="mb-4">
@@ -67,7 +73,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 
+const router = useRouter();
 const apiUrl = import.meta.env.VITE_API_URL;
 const domains = ref([]);
 const searchQuery = ref("");
@@ -80,10 +88,15 @@ const totalPages = computed(() => Math.ceil(total.value / limit));
 
 async function fetchDomains() {
   try {
+    const token = localStorage.getItem("jwt");
     const url = `${apiUrl}/api/domains?page=${
       page.value
     }&limit=${limit}&search=${encodeURIComponent(searchQuery.value)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     if (!res.ok) throw new Error("Neuspešan odgovor sa servera");
     const data = await res.json();
     domains.value = data.data;
@@ -110,6 +123,11 @@ function prevPage() {
     page.value--;
     fetchDomains();
   }
+}
+
+function logout() {
+  localStorage.removeItem("jwt");
+  router.push("/login");
 }
 
 onMounted(() => {
