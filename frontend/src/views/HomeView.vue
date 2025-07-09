@@ -1,78 +1,72 @@
 <template>
-  <div class="p-6 relative">
-    <button
-      @click="logout"
-      class="absolute top-4 right-4 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-    >
-      Odjava
-    </button>
+  <MainLayout>
+    <div class="p-6 relative">
+      <div class="mb-4">
+        <input
+          v-model="searchQuery"
+          @input="handleSearch"
+          type="text"
+          placeholder="Pretraži po domenu, IP adresi..."
+          class="w-full max-w-md px-4 py-2 border rounded-md"
+        />
+      </div>
 
-    <h1 class="text-2xl font-semibold mb-4">DNS Logovi</h1>
+      <div class="overflow-x-auto rounded-lg shadow">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+                #
+              </th>
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+                Domain
+              </th>
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+                IP
+              </th>
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+                Vreme
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 bg-white">
+            <tr v-for="(entry, index) in domains" :key="entry._id">
+              <td class="px-4 py-2 text-sm text-gray-700">
+                {{ (page - 1) * limit + index + 1 }}
+              </td>
+              <td class="px-4 py-2 text-sm text-gray-900">{{ entry.name }}</td>
+              <td class="px-4 py-2 text-sm text-gray-700">{{ entry.ip }}</td>
+              <td class="px-4 py-2 text-sm text-gray-500">
+                {{ formatTimestamp(entry.timestamp) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <div class="mb-4">
-      <input
-        v-model="searchQuery"
-        @input="handleSearch"
-        type="text"
-        placeholder="Pretraži po domenu, IP adresi..."
-        class="w-full max-w-md px-4 py-2 border rounded-md"
-      />
+      <div class="flex items-center justify-between mt-4">
+        <button
+          @click="prevPage"
+          :disabled="page === 1"
+          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Prethodna
+        </button>
+        <span>Strana {{ page }} / {{ totalPages }}</span>
+        <button
+          @click="nextPage"
+          :disabled="page >= totalPages"
+          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Sledeća
+        </button>
+      </div>
     </div>
-
-    <div class="overflow-x-auto rounded-lg shadow">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
-              #
-            </th>
-            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
-              Domain
-            </th>
-            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
-              IP
-            </th>
-            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
-              Vreme
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100 bg-white">
-          <tr v-for="(entry, index) in domains" :key="entry._id">
-            <td class="px-4 py-2 text-sm text-gray-700">
-              {{ (page - 1) * limit + index + 1 }}
-            </td>
-            <td class="px-4 py-2 text-sm text-gray-900">{{ entry.name }}</td>
-            <td class="px-4 py-2 text-sm text-gray-700">{{ entry.ip }}</td>
-            <td class="px-4 py-2 text-sm text-gray-500">
-              {{ formatTimestamp(entry.timestamp) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="flex items-center justify-between mt-4">
-      <button
-        @click="prevPage"
-        :disabled="page === 1"
-        class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-      >
-        Prethodna
-      </button>
-      <span>Strana {{ page }} / {{ totalPages }}</span>
-      <button
-        @click="nextPage"
-        :disabled="page >= totalPages"
-        class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-      >
-        Sledeća
-      </button>
-    </div>
-  </div>
+  </MainLayout>
 </template>
 
 <script setup>
+import MainLayout from "@/layouts/MainLayout.vue";
 import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -135,11 +129,6 @@ function prevPage() {
     page.value--;
     fetchDomains();
   }
-}
-
-function logout() {
-  localStorage.removeItem("jwt");
-  router.push("/login");
 }
 
 onMounted(() => {

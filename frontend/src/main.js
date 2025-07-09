@@ -7,7 +7,7 @@ import router from "./router";
 const app = createApp(App);
 
 router.beforeEach((to, from, next) => {
-  const defaultTitle = "DNS Logger";
+  const defaultTitle = "DNS Logovi";
   document.title = to.meta.title || defaultTitle;
   next();
 });
