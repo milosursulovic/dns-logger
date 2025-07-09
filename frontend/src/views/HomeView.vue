@@ -18,14 +18,32 @@
               <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
                 #
               </th>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+              <th
+                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('name')"
+              >
                 Domain
+                <span v-if="sortBy === 'name'">
+                  {{ sortOrder === "asc" ? "↑" : "↓" }}
+                </span>
               </th>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+              <th
+                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('ip')"
+              >
                 IP
+                <span v-if="sortBy === 'ip'">
+                  {{ sortOrder === "asc" ? "↑" : "↓" }}
+                </span>
               </th>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+              <th
+                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('timestamp')"
+              >
                 Vreme
+                <span v-if="sortBy === 'timestamp'">
+                  {{ sortOrder === "asc" ? "↑" : "↓" }}
+                </span>
               </th>
             </tr>
           </thead>
@@ -77,27 +95,37 @@ const router = useRouter();
 
 const searchQuery = ref(route.query.search || "");
 const page = ref(parseInt(route.query.page) || 1);
+const sortBy = ref(route.query.sortBy || "timestamp");
+const sortOrder = ref(route.query.sortOrder || "desc");
 const limit = 20;
 const total = ref(0);
 
 const formatTimestamp = (ts) => new Date(ts).toLocaleString("sr-RS");
 const totalPages = computed(() => Math.ceil(total.value / limit));
 
-watch([page, searchQuery], ([newPage, newSearch]) => {
-  router.replace({
-    query: {
-      page: newPage,
-      search: newSearch || undefined,
-    },
-  });
-});
+watch(
+  [page, searchQuery, sortBy, sortOrder],
+  ([newPage, newSearch, newSortBy, newSortOrder]) => {
+    router.replace({
+      query: {
+        page: newPage,
+        search: newSearch || undefined,
+        sortBy: newSortBy || undefined,
+        sortOrder: newSortOrder || undefined,
+      },
+    });
+  }
+);
 
 async function fetchDomains() {
   try {
     const token = localStorage.getItem("jwt");
     const url = `${apiUrl}/api/domains?page=${
       page.value
-    }&limit=${limit}&search=${encodeURIComponent(searchQuery.value)}`;
+    }&limit=${limit}&search=${encodeURIComponent(searchQuery.value)}&sortBy=${
+      sortBy.value
+    }&sortOrder=${sortOrder.value}`;
+
     const res = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -129,6 +157,17 @@ function prevPage() {
     page.value--;
     fetchDomains();
   }
+}
+
+function changeSort(field) {
+  if (sortBy.value === field) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortBy.value = field;
+    sortOrder.value = "asc";
+  }
+  page.value = 1;
+  fetchDomains();
 }
 
 onMounted(() => {

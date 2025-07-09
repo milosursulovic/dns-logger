@@ -6,7 +6,13 @@ const router = express.Router();
 
 router.get("/", authenticateToken, async (req, res) => {
   try {
-    const { page = 1, limit = 20, search = "" } = req.query;
+    const {
+      page = 1,
+      limit = 20,
+      search = "",
+      sortBy = "timestamp",
+      sortOrder = "desc",
+    } = req.query;
 
     const searchRegex = new RegExp(search, "i");
 
@@ -19,8 +25,12 @@ router.get("/", authenticateToken, async (req, res) => {
         }
       : {};
 
+    const sort = {
+      [sortBy]: sortOrder === "asc" ? 1 : -1,
+    };
+
     const domains = await Domain.find(query)
-      .sort({ timestamp: -1 })
+      .sort(sort)
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
