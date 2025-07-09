@@ -1,11 +1,12 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 relative">
     <button
       @click="logout"
       class="absolute top-4 right-4 text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
     >
       Odjava
     </button>
+
     <h1 class="text-2xl font-semibold mb-4">DNS Logovi</h1>
 
     <div class="mb-4">
@@ -13,7 +14,7 @@
         v-model="searchQuery"
         @input="handleSearch"
         type="text"
-        placeholder="Pretraži po domenu..."
+        placeholder="Pretraži po domenu, IP adresi..."
         class="w-full max-w-md px-4 py-2 border rounded-md"
       />
     </div>
@@ -72,19 +73,30 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, watch, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-const router = useRouter();
 const apiUrl = import.meta.env.VITE_API_URL;
 const domains = ref([]);
-const searchQuery = ref("");
-const page = ref(1);
+const route = useRoute();
+const router = useRouter();
+
+const searchQuery = ref(route.query.search || "");
+const page = ref(parseInt(route.query.page) || 1);
 const limit = 20;
 const total = ref(0);
 
 const formatTimestamp = (ts) => new Date(ts).toLocaleString("sr-RS");
 const totalPages = computed(() => Math.ceil(total.value / limit));
+
+watch([page, searchQuery], ([newPage, newSearch]) => {
+  router.replace({
+    query: {
+      page: newPage,
+      search: newSearch || undefined,
+    },
+  });
+});
 
 async function fetchDomains() {
   try {

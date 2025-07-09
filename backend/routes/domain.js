@@ -7,7 +7,17 @@ const router = express.Router();
 router.get("/", authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, search = "" } = req.query;
-    const query = search ? { name: { $regex: search, $options: "i" } } : {};
+
+    const searchRegex = new RegExp(search, "i");
+
+    const query = search
+      ? {
+          $or: [
+            { name: { $regex: searchRegex } },
+            { ip: { $regex: searchRegex } },
+          ],
+        }
+      : {};
 
     const domains = await Domain.find(query)
       .sort({ timestamp: -1 })
