@@ -1,14 +1,37 @@
 <template>
   <MainLayout>
     <div class="p-6 relative">
-      <div class="mb-4">
+      <div
+        class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-2"
+      >
         <input
           v-model="searchQuery"
           @input="handleSearch"
           type="text"
           placeholder="Pretraži po domenu, IP adresi..."
-          class="w-full max-w-md px-4 py-2 border rounded-md"
+          class="w-full sm:w-auto flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+
+        <button
+          @click="exportExcel"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-green-400"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v12m0 0l-3-3m3 3l3-3m-3 3V4m-7 8v8h14v-8"
+            />
+          </svg>
+          Exportuj u Excel
+        </button>
       </div>
 
       <div class="overflow-x-auto rounded-lg shadow">
@@ -137,6 +160,39 @@ async function fetchDomains() {
     total.value = data.total;
   } catch (err) {
     console.error("Greška pri dohvatanju podataka:", err);
+  }
+}
+
+async function exportExcel() {
+  try {
+    const token = localStorage.getItem("jwt");
+
+    const url = `${apiUrl}/api/domains/export?search=${encodeURIComponent(
+      searchQuery.value
+    )}&sortBy=${sortBy.value}&sortOrder=${sortOrder.value}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("Neuspešan odgovor sa servera.");
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `dns-logovi-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (err) {
+    console.error("Greška pri eksportovanju:", err);
+    alert("Greška pri eksportovanju u Excel.");
   }
 }
 
