@@ -2,8 +2,10 @@ import express from "express";
 import Domain from "../models/Domain.js";
 import { authenticateToken } from "../middlewares/auth.js";
 import ExcelJS from "exceljs";
+import loadBlockedKeywords from "../utils/loadBlockedKeywords.js";
 
 const router = express.Router();
+const blockedKeywords = loadBlockedKeywords();
 
 router.get("/", authenticateToken, async (req, res) => {
   try {
@@ -48,6 +50,18 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
+router.get("/blocked", authenticateToken, async (req, res) => {
+  try {
+    const blocked = await Domain.find({ category: "blocked" })
+      .sort({ timestamp: -1 })
+      .limit(100);
+
+    res.json({ data: blocked });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch blocked domains" });
+  }
+});
+
 router.post("/", async (req, res) => {
   const domains = req.body;
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -56,16 +70,29 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ error: "Expected array of domains" });
 
   try {
-    const domainDocs = domains.map((name) => ({ name, ip: clientIp }));
+    const domainDocs = domains.map((name) => {
+      const category = blockedKeywords.some((keyword) =>
+        name.toLowerCase().includes(keyword)
+      )
+        ? "blocked"
+        : "normal";
+
+      return { name, ip: clientIp, category };
+    });
+
     await Domain.insertMany(domainDocs, { ordered: false });
 
+    const blockedCount = domainDocs.filter(d => d.category === "blocked").length;
+
     res.status(201).json({
-      message: `Inserted ${domains.length} domains from ${clientIp}.`,
+      message: `Inserted ${domainDocs.length} domains from ${clientIp}.`,
+      blocked: blockedCount,
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to insert domains" });
   }
 });
+
 
 router.get("/export", authenticateToken, async (req, res) => {
   try {
@@ -96,6 +123,7 @@ router.get("/export", authenticateToken, async (req, res) => {
       { header: "Domain", key: "name", width: 30 },
       { header: "IP Adresa", key: "ip", width: 20 },
       { header: "Vreme", key: "timestamp", width: 25 },
+      { header: "Kategorija", key: "category", width: 15 },
     ];
 
     domains.forEach((entry, i) => {
