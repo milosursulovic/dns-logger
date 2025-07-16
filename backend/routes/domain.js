@@ -52,11 +52,27 @@ router.get("/", authenticateToken, async (req, res) => {
 
 router.get("/blocked", authenticateToken, async (req, res) => {
   try {
-    const blocked = await Domain.find({ category: "blocked" })
-      .sort({ timestamp: -1 })
-      .limit(100);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const sortBy = req.query.sortBy || "timestamp";
+    const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
 
-    res.json({ data: blocked });
+    const sort = { [sortBy]: sortOrder };
+
+    const [blocked, total] = await Promise.all([
+      Domain.find({ category: "blocked" })
+        .sort(sort)
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Domain.countDocuments({ category: "blocked" }),
+    ]);
+
+    res.json({
+      data: blocked,
+      total,
+      page,
+      limit,
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch blocked domains" });
   }

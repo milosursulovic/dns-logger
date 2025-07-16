@@ -8,7 +8,15 @@
           <thead class="bg-gray-100">
             <tr>
               <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">#</th>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Domen</th>
+              <th
+                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('name')"
+              >
+                Domen
+                <span v-if="sortBy === 'name'">
+                  {{ sortOrder === "asc" ? "↑" : "↓" }}
+                </span>
+              </th>
               <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">IP</th>
               <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Vreme</th>
             </tr>
@@ -23,33 +31,105 @@
           </tbody>
         </table>
       </div>
+      <div class="flex items-center justify-between mt-4">
+        <button
+          @click="prevPage"
+          :disabled="page === 1"
+          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Prethodna
+        </button>
+        <span>Strana {{ page }} / {{ totalPages }}</span>
+        <button
+          @click="nextPage"
+          :disabled="page >= totalPages"
+          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Sledeća
+        </button>
+      </div>
     </div>
   </MainLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
 
-const blockedDomains = ref([]);
 const apiUrl = import.meta.env.VITE_API_URL;
 
+const blockedDomains = ref([]);
+const total = ref(0);
+
+const route = useRoute();
+const router = useRouter();
+
+const page = ref(parseInt(route.query.page) || 1);
+const sortBy = ref(route.query.sortBy || "timestamp");
+const sortOrder = ref(route.query.sortOrder || "desc");
+const limit = 20;
+
+const totalPages = computed(() => Math.ceil(total.value / limit));
 const formatTimestamp = (ts) => new Date(ts).toLocaleString("sr-RS");
 
-onMounted(async () => {
-  document.title = "Blokirani domeni";
+watch([page, sortBy, sortOrder], ([newPage, newSortBy, newSortOrder]) => {
+  router.replace({
+    query: {
+      page: newPage,
+      sortBy: newSortBy || undefined,
+      sortOrder: newSortOrder || undefined,
+    },
+  });
+});
+
+async function fetchBlockedDomains() {
   const token = localStorage.getItem("jwt");
 
   try {
-    const res = await fetch(`${apiUrl}/api/domains/blocked`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const url = `${apiUrl}/api/domains/blocked?page=${page.value}&limit=${limit}&sortBy=${sortBy.value}&sortOrder=${sortOrder.value}`;
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!res.ok) throw new Error("Neuspešan odgovor sa servera.");
     const data = await res.json();
     blockedDomains.value = data.data;
+    total.value = data.total;
   } catch (err) {
     console.error("Greška pri dohvatanju blokiranih domena:", err);
   }
+}
+
+function nextPage() {
+  if (page.value < totalPages.value) {
+    page.value++;
+    fetchBlockedDomains();
+  }
+}
+
+function prevPage() {
+  if (page.value > 1) {
+    page.value--;
+    fetchBlockedDomains();
+  }
+}
+
+function changeSort(field) {
+  if (sortBy.value === field) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortBy.value = field;
+    sortOrder.value = "asc";
+  }
+  page.value = 1;
+  fetchBlockedDomains();
+}
+
+onMounted(() => {
+  document.title = "Blokirani domeni";
+  fetchBlockedDomains();
 });
 </script>
