@@ -48,7 +48,7 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", async (req, res) => {
   const domains = req.body;
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
