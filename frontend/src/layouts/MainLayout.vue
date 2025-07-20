@@ -3,9 +3,17 @@
     class="min-h-screen bg-gradient-to-br from-slate-100 to-white text-gray-800"
   >
     <header class="bg-white bg-opacity-90 shadow p-4 sticky top-0 z-50">
-      <div class="max-w-7xl mx-auto flex justify-between items-center px-4 relative">
+      <div
+        class="max-w-7xl mx-auto flex justify-between items-center px-4 relative"
+      >
         <div class="flex items-center gap-4">
-          <div class="text-lg font-semibold">DNS Logovi</div>
+          <router-link
+            to="/"
+            class="text-lg font-semibold text-blue-600 hover:text-blue-800 transition"
+          >
+            DNS Logovi
+          </router-link>
+
           <router-link
             to="/blocked"
             class="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded shadow"
