@@ -56,15 +56,26 @@ router.get("/blocked", authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const sortBy = req.query.sortBy || "timestamp";
     const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
-
     const sort = { [sortBy]: sortOrder };
+    const search = req.query.search || "";
+    const searchRegex = new RegExp(search, "i");
+
+    const query = {
+      category: "blocked",
+      ...(search && {
+        $or: [
+          { name: { $regex: searchRegex } },
+          { ip: { $regex: searchRegex } },
+        ],
+      }),
+    };
 
     const [blocked, total] = await Promise.all([
-      Domain.find({ category: "blocked" })
+      Domain.find(query)
         .sort(sort)
         .skip((page - 1) * limit)
         .limit(limit),
-      Domain.countDocuments({ category: "blocked" }),
+      Domain.countDocuments(query),
     ]);
 
     res.json({
@@ -98,7 +109,9 @@ router.post("/", async (req, res) => {
 
     await Domain.insertMany(domainDocs, { ordered: false });
 
-    const blockedCount = domainDocs.filter(d => d.category === "blocked").length;
+    const blockedCount = domainDocs.filter(
+      (d) => d.category === "blocked"
+    ).length;
 
     res.status(201).json({
       message: `Inserted ${domainDocs.length} domains from ${clientIp}.`,
@@ -108,7 +121,6 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Failed to insert domains" });
   }
 });
-
 
 router.get("/export", authenticateToken, async (req, res) => {
   try {
@@ -148,6 +160,7 @@ router.get("/export", authenticateToken, async (req, res) => {
         name: entry.name,
         ip: entry.ip,
         timestamp: new Date(entry.timestamp).toLocaleString("sr-RS"),
+        category: entry.category,
       });
     });
 
