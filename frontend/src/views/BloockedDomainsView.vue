@@ -3,11 +3,25 @@
     <div class="p-6">
       <h1 class="text-xl font-semibold mb-4">Blokirani domeni</h1>
 
+      <div
+        class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-2"
+      >
+        <input
+          v-model="searchQuery"
+          @input="handleSearch"
+          type="text"
+          placeholder="Pretraži po domenu, IP adresi..."
+          class="w-full sm:w-auto flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       <div class="overflow-x-auto rounded-lg shadow">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">#</th>
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+                #
+              </th>
               <th
                 class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
                 @click="changeSort('name')"
@@ -17,16 +31,24 @@
                   {{ sortOrder === "asc" ? "↑" : "↓" }}
                 </span>
               </th>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">IP</th>
-              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Vreme</th>
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+                IP
+              </th>
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
+                Vreme
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 bg-white">
             <tr v-for="(entry, index) in blockedDomains" :key="entry._id">
-              <td class="px-4 py-2 text-sm">{{ index + 1 }}</td>
+              <td class="px-4 py-2 text-sm text-gray-700">
+                {{ (page - 1) * limit + index + 1 }}
+              </td>
               <td class="px-4 py-2 text-sm">{{ entry.name }}</td>
               <td class="px-4 py-2 text-sm">{{ entry.ip }}</td>
-              <td class="px-4 py-2 text-sm">{{ formatTimestamp(entry.timestamp) }}</td>
+              <td class="px-4 py-2 text-sm">
+                {{ formatTimestamp(entry.timestamp) }}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -58,36 +80,46 @@ import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
 
 const apiUrl = import.meta.env.VITE_API_URL;
-
 const blockedDomains = ref([]);
 const total = ref(0);
-
 const route = useRoute();
 const router = useRouter();
-
 const page = ref(parseInt(route.query.page) || 1);
 const sortBy = ref(route.query.sortBy || "timestamp");
 const sortOrder = ref(route.query.sortOrder || "desc");
 const limit = 20;
-
+const searchQuery = ref(route.query.search || "");
 const totalPages = computed(() => Math.ceil(total.value / limit));
 const formatTimestamp = (ts) => new Date(ts).toLocaleString("sr-RS");
 
-watch([page, sortBy, sortOrder], ([newPage, newSortBy, newSortOrder]) => {
-  router.replace({
-    query: {
-      page: newPage,
-      sortBy: newSortBy || undefined,
-      sortOrder: newSortOrder || undefined,
-    },
-  });
-});
+watch(
+  [page, sortBy, sortOrder, searchQuery],
+  ([newPage, newSortBy, newSortOrder, newSearch]) => {
+    router.replace({
+      query: {
+        page: newPage,
+        sortBy: newSortBy || undefined,
+        sortOrder: newSortOrder || undefined,
+        search: newSearch || undefined,
+      },
+    });
+  }
+);
+
+function handleSearch() {
+  page.value = 1;
+  fetchBlockedDomains();
+}
 
 async function fetchBlockedDomains() {
   const token = localStorage.getItem("jwt");
 
   try {
-    const url = `${apiUrl}/api/domains/blocked?page=${page.value}&limit=${limit}&sortBy=${sortBy.value}&sortOrder=${sortOrder.value}`;
+    const url = `${apiUrl}/api/domains/blocked?page=${
+      page.value
+    }&limit=${limit}&sortBy=${sortBy.value}&sortOrder=${
+      sortOrder.value
+    }&search=${encodeURIComponent(searchQuery.value)}`;
     const res = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
