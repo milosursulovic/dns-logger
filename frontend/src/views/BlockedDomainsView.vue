@@ -3,16 +3,9 @@
     <div class="p-6">
       <h1 class="text-xl font-semibold mb-4">Blokirani domeni</h1>
 
-      <div
-        class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-2"
-      >
-        <input
-          v-model="searchQuery"
-          @input="handleSearch"
-          type="text"
-          placeholder="Pretraži po domenu, IP adresi..."
-          class="w-full sm:w-auto flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-2">
+        <input v-model="searchQuery" @input="handleSearch" type="text" placeholder="Pretraži po domenu, IP adresi..."
+          class="w-full sm:w-auto flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </div>
 
       <div class="overflow-x-auto rounded-lg shadow">
@@ -22,10 +15,8 @@
               <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
                 #
               </th>
-              <th
-                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
-                @click="changeSort('name')"
-              >
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('name')">
                 Domen
                 <span v-if="sortBy === 'name'">
                   {{ sortOrder === "asc" ? "↑" : "↓" }}
@@ -54,19 +45,12 @@
         </table>
       </div>
       <div class="flex items-center justify-between mt-4">
-        <button
-          @click="prevPage"
-          :disabled="page === 1"
-          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-        >
+        <button @click="prevPage" :disabled="page === 1" class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
           Prethodna
         </button>
         <span>Strana {{ page }} / {{ totalPages }}</span>
-        <button
-          @click="nextPage"
-          :disabled="page >= totalPages"
-          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-        >
+        <button @click="nextPage" :disabled="page >= totalPages"
+          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
           Sledeća
         </button>
       </div>
@@ -78,6 +62,7 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
+import { fetchWithAuth } from "@/utils/authFetch";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const blockedDomains = ref([]);
@@ -112,19 +97,10 @@ function handleSearch() {
 }
 
 async function fetchBlockedDomains() {
-  const token = localStorage.getItem("jwt");
-
   try {
-    const url = `${apiUrl}/api/domains/blocked?page=${
-      page.value
-    }&limit=${limit}&sortBy=${sortBy.value}&sortOrder=${
-      sortOrder.value
-    }&search=${encodeURIComponent(searchQuery.value)}`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(
+      `/api/domains/blocked?page=${page.value}&limit=${limit}&sortBy=${sortBy.value}&sortOrder=${sortOrder.value}&search=${encodeURIComponent(searchQuery.value)}`
+    );
 
     if (!res.ok) throw new Error("Neuspešan odgovor sa servera.");
     const data = await res.json();

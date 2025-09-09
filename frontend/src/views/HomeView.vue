@@ -1,34 +1,15 @@
 <template>
   <MainLayout>
     <div class="p-6 relative">
-      <div
-        class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-2"
-      >
-        <input
-          v-model="searchQuery"
-          @input="handleSearch"
-          type="text"
-          placeholder="Pretraži po domenu, IP adresi..."
-          class="w-full sm:w-auto flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4 gap-2">
+        <input v-model="searchQuery" @input="handleSearch" type="text" placeholder="Pretraži po domenu, IP adresi..."
+          class="w-full sm:w-auto flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
-        <button
-          @click="exportExcel"
-          class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-green-400"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v12m0 0l-3-3m3 3l3-3m-3 3V4m-7 8v8h14v-8"
-            />
+        <button @click="exportExcel"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md shadow focus:outline-none focus:ring-2 focus:ring-green-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v12m0 0l-3-3m3 3l3-3m-3 3V4m-7 8v8h14v-8" />
           </svg>
           Exportuj u Excel
         </button>
@@ -41,28 +22,22 @@
               <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">
                 #
               </th>
-              <th
-                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
-                @click="changeSort('name')"
-              >
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('name')">
                 Domain
                 <span v-if="sortBy === 'name'">
                   {{ sortOrder === "asc" ? "↑" : "↓" }}
                 </span>
               </th>
-              <th
-                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
-                @click="changeSort('ip')"
-              >
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('ip')">
                 IP
                 <span v-if="sortBy === 'ip'">
                   {{ sortOrder === "asc" ? "↑" : "↓" }}
                 </span>
               </th>
-              <th
-                class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
-                @click="changeSort('timestamp')"
-              >
+              <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 cursor-pointer"
+                @click="changeSort('timestamp')">
                 Vreme
                 <span v-if="sortBy === 'timestamp'">
                   {{ sortOrder === "asc" ? "↑" : "↓" }}
@@ -86,19 +61,12 @@
       </div>
 
       <div class="flex items-center justify-between mt-4">
-        <button
-          @click="prevPage"
-          :disabled="page === 1"
-          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-        >
+        <button @click="prevPage" :disabled="page === 1" class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
           Prethodna
         </button>
         <span>Strana {{ page }} / {{ totalPages }}</span>
-        <button
-          @click="nextPage"
-          :disabled="page >= totalPages"
-          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-        >
+        <button @click="nextPage" :disabled="page >= totalPages"
+          class="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">
           Sledeća
         </button>
       </div>
@@ -110,6 +78,7 @@
 import MainLayout from "@/layouts/MainLayout.vue";
 import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { fetchWithAuth } from "@/utils/authFetch";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const domains = ref([]);
@@ -142,18 +111,11 @@ watch(
 
 async function fetchDomains() {
   try {
-    const token = localStorage.getItem("jwt");
-    const url = `${apiUrl}/api/domains?page=${
-      page.value
-    }&limit=${limit}&search=${encodeURIComponent(searchQuery.value)}&sortBy=${
-      sortBy.value
-    }&sortOrder=${sortOrder.value}`;
-
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(
+      `/api/domains?page=${page.value}&limit=${limit}&search=${encodeURIComponent(
+        searchQuery.value
+      )}&sortBy=${sortBy.value}&sortOrder=${sortOrder.value}`
+    );
     if (!res.ok) throw new Error("Neuspešan odgovor sa servera");
     const data = await res.json();
     domains.value = data.data;
@@ -165,18 +127,12 @@ async function fetchDomains() {
 
 async function exportExcel() {
   try {
-    const token = localStorage.getItem("jwt");
-
-    const url = `${apiUrl}/api/domains/export?search=${encodeURIComponent(
-      searchQuery.value
-    )}&sortBy=${sortBy.value}&sortOrder=${sortOrder.value}`;
-
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(
+      `/api/domains/export?search=${encodeURIComponent(
+        searchQuery.value
+      )}&sortBy=${sortBy.value}&sortOrder=${sortOrder.value}`,
+      { method: "GET" }
+    );
 
     if (!res.ok) throw new Error("Neuspešan odgovor sa servera.");
 
